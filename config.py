@@ -14,8 +14,10 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # === ⚙️ Bot Settings ===
-TRADE_CAPITAL_PER_PAIR = 50  # USDT per leg
-UPDATE_INTERVAL = 60       # Time between checks in seconds (e.g., 300 = 5min)
+TRADE_CAPITAL_PER_PAIR = 10 # USDT per leg
+UPDATE_INTERVAL = 3     # Time between checks in seconds (e.g., 300 = 5min)
+USE_ISOLATED_MARGIN = False  # Set to True to use Isolated
+
 
 # === 📁 File Paths ===
 PAIR_CONFIG_CSV = "live_pairs.csv"       # File with live trading pairs + parameters

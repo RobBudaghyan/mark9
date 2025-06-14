@@ -8,6 +8,7 @@ import json
 from binance_api import get_pair_price, place_order, get_margin_balance, get_historical_prices
 from telegram_notify import send_telegram_message, format_trade_message, setup_telegram_commands
 from config import PAIR_CONFIG_CSV, TRADE_CAPITAL_PER_PAIR, UPDATE_INTERVAL, LOG_FILE, STATE_FILE
+from config import USE_ISOLATED_MARGIN
 
 logging.basicConfig(level=logging.INFO)
 
@@ -104,16 +105,16 @@ def run_bot():
                     qty1 = TRADE_CAPITAL_PER_PAIR / price1
                     qty2 = TRADE_CAPITAL_PER_PAIR / price2
 
-                    res1 = place_order(sym1, side1, qty1, isolated=True)
-                    res2 = place_order(sym2, side2, qty2, isolated=True)
+                    res1 = place_order(sym1, side1, qty1, isolated=USE_ISOLATED_MARGIN)
+                    res2 = place_order(sym2, side2, qty2, isolated=USE_ISOLATED_MARGIN)
 
                     if not res1 or not res2:
                         if res1:
                             reverse_side = 'BUY' if side1 == 'SELL' else 'SELL'
-                            place_order(sym1, reverse_side, qty1, isolated=True)
+                            place_order(sym1, reverse_side, qty1, isolated=USE_ISOLATED_MARGIN)
                         if res2:
                             reverse_side = 'BUY' if side2 == 'SELL' else 'SELL'
-                            place_order(sym2, reverse_side, qty2, isolated=True)
+                            place_order(sym2, reverse_side, qty2, isolated=USE_ISOLATED_MARGIN)
                         continue
 
                     open_positions[key] = {
