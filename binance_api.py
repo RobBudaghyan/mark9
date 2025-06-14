@@ -1,45 +1,62 @@
-# binance_api.py (Real-life isolated margin version)
+# binance_api.py
 
 import os
 import logging
 from binance.client import Client
-from dotenv import load_dotenv
+from binance.exceptions import BinanceAPIException
+from config import BINANCE_API_KEY, BINANCE_API_SECRET
 
-load_dotenv()
+# # Load keys from environment variables
+# API_KEY = os.getenv("BINANCE_API_KEY")
+# API_SECRET = os.getenv("BINANCE_API_SECRET")
 
-API_KEY = os.getenv("BINANCE_API_KEY")
-API_SECRET = os.getenv("BINANCE_API_SECRET")
+client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
 
-client = Client(API_KEY, API_SECRET)
+assert BINANCE_API_SECRET is not None, "BINANCE_API_SECRET is missing!"
 
+
+# Get live price of a symbol
 def get_pair_price(symbol):
     try:
         ticker = client.get_symbol_ticker(symbol=symbol)
         return float(ticker['price'])
     except Exception as e:
-        logging.error(f"Price fetch failed for {symbol}: {e}")
+        logging.error(f"Error fetching price for {symbol}: {e}")
         return None
 
+# Get margin balance for isolated margin
+def get_margin_balance():
+    try:
+        return client.get_isolated_margin_account()
+    except Exception as e:
+        logging.error(f"Error fetching margin balance: {e}")
+        return {}
+
+# Place order in isolated margin mode
 def place_order(symbol, side, quantity, isolated=True):
     try:
-        # Margin account must be isolated and enabled for that pair
-        response = client.create_margin_order(
+        order = client.create_margin_order(
             symbol=symbol,
             side=side,
             type='MARKET',
             quantity=round(quantity, 6),
-            isIsolated='TRUE' if isolated else 'FALSE'
+            isIsolated=isolated
         )
-        logging.info(f"✅ Order placed: {side} {quantity} {symbol}")
-        return response
-    except Exception as e:
-        logging.error(f"❌ Order failed: {side} {quantity} {symbol}: {e}")
+        logging.info(f"[Live] Placed {side} order for {quantity} {symbol}")
+        return order
+    except BinanceAPIException as e:
+        logging.error(f"Order failed: {e.message}")
         return None
 
-def get_margin_balance():
+# Get historical prices for z-score calculation
+def get_historical_prices(symbol, window):
     try:
-        balance = client.get_isolated_margin_account()
-        return balance['totalAssetOfBtc'], balance
+        klines = client.get_klines(
+            symbol=symbol,
+            interval=Client.KLINE_INTERVAL_1MINUTE,
+            limit=window
+        )
+        return [float(candle[4]) for candle in klines]  # close prices
     except Exception as e:
-        logging.error(f"❌ Balance fetch failed: {e}")
-        return 0, None
+        logging.error(f"Error fetching historical prices for {symbol}: {e}")
+        return []
