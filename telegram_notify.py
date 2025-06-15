@@ -4,6 +4,22 @@ import requests
 import logging
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 
+def get_updates(offset=None):
+    """Gets updates from the Telegram bot."""
+    if not TELEGRAM_TOKEN:
+        logging.warning("Telegram token is not set. Cannot get updates.")
+        return []
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates"
+    params = {'timeout': 100, 'offset': offset}
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json().get('result', [])
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to get Telegram updates: {e}")
+        return []
+
 def send_telegram_message(message):
     """Sends a message to the configured Telegram chat."""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
