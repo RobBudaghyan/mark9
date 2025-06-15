@@ -2,36 +2,41 @@
 
 import requests
 import logging
+from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 
-BOT_TOKEN = "<REPLACE_WITH_YOUR_BOT_TOKEN>"
-CHAT_ID = "<REPLACE_WITH_YOUR_CHAT_ID>"
-
-# Send a message to Telegram
 def send_telegram_message(message):
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        data = {"chat_id": CHAT_ID, "text": message}
-        response = requests.post(url, data=data)
-        if not response.ok:
-            logging.error(f"Telegram failed: {response.text}")
-    except Exception as e:
-        logging.error(f"Error sending Telegram message: {e}")
+    """Sends a message to the configured Telegram chat."""
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        logging.warning("Telegram token or chat ID is not set. Skipping message.")
+        return
 
-# Format message for a trade alert
-def format_trade_message(pair, side1, side2, qty1, qty2, price1, price2, reason, balance, pnl=None):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        'chat_id': TELEGRAM_CHAT_ID,
+        'text': message,
+        'parse_mode': 'Markdown'
+    }
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        logging.info("Successfully sent Telegram message.")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to send Telegram message: {e}")
+
+
+def format_trade_message(pair, side1, side2, qty1, qty2, price1, price2, reason, pnl=None):
+    """
+    Formats a trade message for Telegram.
+    This new version matches the arguments sent by the bot.
+    """
     msg = (
-        f"📢 Trade Alert\n"
-        f"Pair: {pair}\n"
-        f"Action: {reason}\n\n"
-        f"Long {qty1:.4f} @ {price1:.6f}\n"
-        f"Short {qty2:.4f} @ {price2:.6f}\n\n"
-        f"📊 Balance: {balance:.2f} USDT"
+        f"*Trade Alert*\n\n"
+        f"*Pair*: `{pair}`\n"
+        f"*Action*: `{reason}`\n\n"
+        f"*Leg 1*: {side1} `{qty1:.4f}` @ `{price1:.6f}`\n"
+        f"*Leg 2*: {side2} `{qty2:.4f}` @ `{price2:.6f}`\n"
     )
     if pnl is not None:
-        msg += f"\n💰 PnL: {pnl:.4f}"
+        pnl_str = f"+${pnl:.4f}" if pnl >= 0 else f"-${abs(pnl):.4f}"
+        msg += f"\n*PnL*: `{pnl_str}`"
     return msg
-
-# Setup Telegram bot command handlers
-def setup_telegram_commands(commands):
-    # Placeholder for real bot listener logic, e.g., using python-telegram-bot or aiogram
-    logging.info("Telegram command listener setup is stubbed in this minimal version")
